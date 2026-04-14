@@ -15,7 +15,7 @@ interfaces:
     ip: 57.57.57.5
     mask: 255.255.255.0
     ospf: true
-    pim: true
+#   pim: true
 
   - name: Ethernet0/1
     ip: 45.45.45.5
