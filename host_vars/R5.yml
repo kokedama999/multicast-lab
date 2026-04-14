@@ -36,7 +36,6 @@ interfaces:
     pim: true
 
 shutdown_interfaces:
-  - Ethernet1/0
   - Ethernet1/1
   - Ethernet1/2
   - Ethernet1/3
