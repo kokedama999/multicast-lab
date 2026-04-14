@@ -2,6 +2,25 @@
   hosts: cisco
   gather_facts: false
 
+  vars:
+    ospf_process: 1
+    ospf_area: 0
+    rp_address: 3.3.3.3
+
+    base_global_config:
+      - no ip domain lookup
+      - ip cef
+      - login on-success log
+      - no ipv6 cef
+      - spanning-tree mode rapid-pvst
+      - ip http server
+      - ip http secure-server
+      - ip ssh bulk-mode 131072
+      - no logging btrace
+
+    multicast_global_config:
+      - ip multicast-routing
+
   tasks:
     - name: Apply base global config
       cisco.ios.ios_config:
@@ -36,18 +55,12 @@
           }}
       loop: "{{ interfaces | default([]) }}"
 
-    - name: Shutdown unused interfaces
-      cisco.ios.ios_config:
-        parents: "interface {{ item }}"
-        lines:
-          - shutdown
-      loop: "{{ shutdown_interfaces | default([]) }}"
-
     - name: Configure OSPF router-id
       cisco.ios.ios_config:
         parents: "router ospf {{ ospf_process }}"
         lines:
           - "router-id {{ router_id }}"
+      when: router_id is defined
 
     - name: Configure RP where multicast is enabled
       cisco.ios.ios_config:
@@ -56,11 +69,6 @@
       when:
         - multicast_enabled | default(false)
         - rp_enabled | default(false)
-
-    - name: Configure VTY for SSH
-      cisco.ios.ios_config:
-        parents: "line vty 0 4"
-        lines: "{{ vty_config }}"
 
     - name: Save config
       cisco.ios.ios_config:
