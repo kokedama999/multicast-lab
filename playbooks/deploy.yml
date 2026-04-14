@@ -1,0 +1,9 @@
+- name: Configure multicast lab
+  hosts: cisco
+  gather_facts: false
+
+  tasks:
+    - name: Test connectivity
+      cisco.ios.ios_command:
+        commands:
+          - show ip interface brief
