@@ -1,0 +1,44 @@
+hostname: R1
+router_id: 1.1.1.1
+multicast_enabled: false
+rp_enabled: false
+
+loopbacks:
+  - name: Loopback0
+    ip: 1.1.1.1
+    mask: 255.255.255.255
+    ospf: true
+    pim: false
+
+interfaces:
+  - name: Ethernet0/0
+    ip: 13.13.13.1
+    mask: 255.255.255.0
+    ospf: true
+    pim: true
+
+  - name: Ethernet0/1
+    dhcp: true
+    ospf: false
+    pim: false
+
+  - name: Ethernet1/0
+    ip: 192.168.8.221
+    mask: 255.255.255.0
+    ospf: false
+    pim: false
+
+shutdown_interfaces:
+  - Ethernet0/2
+  - Ethernet0/3
+  - Ethernet1/1
+  - Ethernet1/2
+  - Ethernet1/3
+  - Serial2/0
+  - Serial2/1
+  - Serial2/2
+  - Serial2/3
+  - Serial3/0
+  - Serial3/1
+  - Serial3/2
+  - Serial3/3
