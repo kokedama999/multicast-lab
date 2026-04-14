@@ -1,3 +1,21 @@
 ospf_process: 1
 ospf_area: 0
 rp_address: 3.3.3.3
+
+base_global_config:
+  - no ip domain lookup
+  - ip cef
+  - login on-success log
+  - no ipv6 cef
+  - spanning-tree mode rapid-pvst
+  - ip http server
+  - ip http secure-server
+  - ip ssh bulk-mode 131072
+  - no logging btrace
+
+multicast_global_config:
+  - ip multicast-routing
+
+vty_config:
+  - login
+  - transport input ssh
