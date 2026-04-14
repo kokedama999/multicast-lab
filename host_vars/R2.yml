@@ -1,0 +1,50 @@
+hostname: R2
+router_id: 2.2.2.2
+multicast_enabled: true
+rp_enabled: true
+
+loopbacks:
+  - name: Loopback0
+    ip: 2.2.2.2
+    mask: 255.255.255.255
+    ospf: false
+    pim: false
+
+interfaces:
+  - name: Ethernet0/2
+    ip: 23.23.23.2
+    mask: 255.255.255.0
+    ospf: true
+    pim: true
+
+  - name: Ethernet0/3
+    ip: 25.25.25.2
+    mask: 255.255.255.0
+    ospf: true
+    pim: true
+
+  - name: Ethernet1/0
+    ip: 192.168.8.222
+    mask: 255.255.255.0
+    ospf: false
+    pim: false
+
+  - name: Ethernet1/2
+    ip: 24.24.24.2
+    mask: 255.255.255.0
+    ospf: true
+    pim: true
+
+shutdown_interfaces:
+  - Ethernet0/0
+  - Ethernet0/1
+  - Ethernet1/1
+  - Ethernet1/3
+  - Serial2/0
+  - Serial2/1
+  - Serial2/2
+  - Serial2/3
+  - Serial3/0
+  - Serial3/1
+  - Serial3/2
+  - Serial3/3
