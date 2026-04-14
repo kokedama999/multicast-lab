@@ -23,6 +23,12 @@ interfaces:
     ospf: true
     pim: true
 
+  - name: Ethernet1/0
+    ip: 192.168.8.224
+    mask: 255.255.255.0
+    ospf: false
+    pim: false
+    
   - name: Ethernet1/2
     ip: 24.24.24.4
     mask: 255.255.255.0
