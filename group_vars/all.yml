@@ -17,5 +17,5 @@ multicast_global_config:
   - ip multicast-routing
 
 vty_config:
-  - login
+  - login local
   - transport input ssh
