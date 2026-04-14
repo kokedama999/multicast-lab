@@ -29,6 +29,13 @@ interfaces:
     ospf: true
     pim: true
 
+
+  - name: Ethernet1/0
+    ip: 192.168.8.226
+    mask: 255.255.255.0
+    ospf: false
+    pim: false
+    
 shutdown_interfaces:
   - Ethernet0/3
   - Ethernet1/1
