@@ -15,7 +15,3 @@ base_global_config:
 
 multicast_global_config:
   - ip multicast-routing
-
-vty_config:
-  - login local
-  - transport input ssh
