@@ -1,0 +1,40 @@
+- name: Back up running configs from routers
+  hosts: cisco
+  gather_facts: false
+
+  tasks:
+    - name: Get running config
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: running_config
+
+    - name: Save running config to file on Ansible server
+      ansible.builtin.copy:
+        content: "{{ running_config.stdout[0] }}"
+        dest: "../backups/{{ inventory_hostname }}-running.cfg"
+      delegate_to: localhost
+
+- name: Commit and push backups to GitHub
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Add backup files to git
+      ansible.builtin.command: git add backups/
+      args:
+        chdir: "{{ playbook_dir }}/.."
+
+    - name: Commit backup files
+      ansible.builtin.command: git commit -m "Backup router configs"
+      args:
+        chdir: "{{ playbook_dir }}/.."
+      register: git_commit
+      failed_when: false
+      changed_when: "'nothing to commit' not in (git_commit.stdout | default('') ~ git_commit.stderr | default(''))"
+
+    - name: Push to GitHub
+      ansible.builtin.command: git push origin main
+      args:
+        chdir: "{{ playbook_dir }}/.."
+      when: git_commit.rc == 0
