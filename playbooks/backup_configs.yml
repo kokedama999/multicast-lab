@@ -1,9 +1,10 @@
-##V3
+##V4
 - name: Back up running configs from routers
   hosts: cisco
   gather_facts: false
 
   vars:
+    ansible_become: false
     backup_timestamp: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
     backup_dir: "{{ playbook_dir }}/../backups"
 
