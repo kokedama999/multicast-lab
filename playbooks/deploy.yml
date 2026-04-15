@@ -1,59 +1,64 @@
-- name: Deploy multicast lab
+- name: Back up running configs from routers
   hosts: cisco
   gather_facts: false
 
-  vars_files:
-    - ../group_vars/all.yml
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_network_os: cisco.ios.ios
+    ansible_user: ansible
+    ansible_password: ansible
+    ansible_become: false
+    backup_timestamp: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+    backup_dir: "{{ playbook_dir }}/../backups"
 
   tasks:
-    - name: Apply base global config
-      cisco.ios.ios_config:
-        lines: "{{ base_global_config }}"
+    - name: Ensure backup directory exists on Ansible server
+      ansible.builtin.file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
 
-    - name: Enable multicast globally where required
-      cisco.ios.ios_config:
-        lines: "{{ multicast_global_config }}"
-      when: multicast_enabled | default(false)
+    - name: Get running config
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: running_config
 
-    - name: Configure loopbacks
-      cisco.ios.ios_config:
-        parents: "interface {{ item.name }}"
-        lines: >-
-          {{
-            ['ip address ' ~ item.ip ~ ' ' ~ item.mask, 'no shutdown']
-            + (['ip ospf ' ~ ospf_process|string ~ ' area ' ~ ospf_area|string] if item.ospf | default(false) else [])
-            + (['ip pim sparse-mode'] if item.pim | default(false) else [])
-          }}
-      loop: "{{ loopbacks | default([]) }}"
+    - name: Save running config to timestamped file on Ansible server
+      ansible.builtin.copy:
+        content: "{{ running_config.stdout[0] }}"
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}-running-{{ backup_timestamp }}.cfg"
+        mode: "0644"
+      delegate_to: localhost
 
-    - name: Configure data interfaces
-      cisco.ios.ios_config:
-        parents: "interface {{ item.name }}"
-        lines: >-
-          {{
-            (['ip address dhcp'] if item.dhcp | default(false) else ['ip address ' ~ item.ip ~ ' ' ~ item.mask])
-            + ['no shutdown']
-            + (['ip ospf ' ~ ospf_process|string ~ ' area ' ~ ospf_area|string] if item.ospf | default(false) else [])
-            + (['ip pim sparse-mode'] if item.pim | default(false) else [])
-            + (['ip igmp join-group ' ~ item.igmp_join_group] if item.igmp_join_group is defined else [])
-          }}
-      loop: "{{ interfaces | default([]) }}"
+- name: Commit and push backups to GitHub
+  hosts: localhost
+  gather_facts: false
 
-    - name: Configure OSPF router-id
-      cisco.ios.ios_config:
-        parents: "router ospf {{ ospf_process }}"
-        lines:
-          - "router-id {{ router_id }}"
-      when: router_id is defined
+  vars:
+    repo_dir: "{{ playbook_dir }}/.."
+    backup_timestamp: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
 
-    - name: Configure RP where multicast is enabled
-      cisco.ios.ios_config:
-        lines:
-          - "ip pim rp-address {{ rp_address }}"
-      when:
-        - multicast_enabled | default(false)
-        - rp_enabled | default(false)
+  tasks:
+    - name: Stage backup files
+      ansible.builtin.command: git add backups/
+      args:
+        chdir: "{{ repo_dir }}"
 
-    - name: Save config
-      cisco.ios.ios_config:
-        save_when: changed
+    - name: Commit backup files
+      ansible.builtin.command: >
+        git commit -m "Backup router configs {{ backup_timestamp }}"
+      args:
+        chdir: "{{ repo_dir }}"
+      register: git_commit
+      failed_when: false
+      changed_when: >
+        'nothing to commit' not in
+        ((git_commit.stdout | default('')) ~ (git_commit.stderr | default('')))
+
+    - name: Push backup files to GitHub
+      ansible.builtin.command: git push origin main
+      args:
+        chdir: "{{ repo_dir }}"
+      when: git_commit.rc == 0
