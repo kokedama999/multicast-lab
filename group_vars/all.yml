@@ -13,5 +13,7 @@ base_global_config:
   - ip ssh bulk-mode 131072
   - no logging btrace
   - service password-encryption
+  - ip http server
+  - ip http secure-server
 multicast_global_config:
   - ip multicast-routing
