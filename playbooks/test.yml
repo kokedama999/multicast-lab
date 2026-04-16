@@ -1,0 +1,17 @@
+---
+- name: Test push
+  hosts: R1
+  gather_facts: false
+  connection: ansible.netcommon.network_cli
+
+  vars:
+    ansible_network_os: cisco.ios.ios
+    ansible_become: true
+    ansible_become_method: enable
+
+  tasks:
+    - name: Force description
+      cisco.ios.ios_config:
+        parents: "interface Ethernet0/0"
+        lines:
+          - description TEST-FROM-ANSIBLE
