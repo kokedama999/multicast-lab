@@ -1,6 +1,6 @@
 # ==========================================
 # Playbook: deploy.yml
-# Version: v1.3
+# Version: v1.4
 # Date: 2026-04-16
 # Author: 
 # Notes:
@@ -11,35 +11,37 @@
   hosts: cisco
   connection: ansible.netcommon.network_cli
   gather_facts: no
+
   collections:
     - cisco.ios
 
-pre_tasks:
-  - name: Load global vars explicitly
-    ansible.builtin.include_vars:
-      file: "{{ inventory_dir }}/group_vars/all.yml"
+  pre_tasks:
+    - name: Load global vars explicitly
+      ansible.builtin.include_vars:
+        file: "{{ inventory_dir }}/group_vars/all.yml"
 
-  - name: Prove globals loaded
-    ansible.builtin.debug:
-      msg:
-        host: "{{ inventory_hostname }}"
-        ospf_process: "{{ ospf_process | default('MISSING') }}"
-        ospf_area: "{{ ospf_area | default('MISSING') }}"
-        rp_address: "{{ rp_address | default('MISSING') }}"
+    - name: Debug global vars (sanity check)
+      ansible.builtin.debug:
+        msg:
+          host: "{{ inventory_hostname }}"
+          ospf_process: "{{ ospf_process | default('MISSING') }}"
+          ospf_area: "{{ ospf_area | default('MISSING') }}"
+          rp_address: "{{ rp_address | default('MISSING') }}"
 
-  - name: Fail fast if globals missing
-    ansible.builtin.assert:
-      that:
-        - ospf_process is defined
-        - ospf_area is defined
-        - rp_address is defined
-      fail_msg: "Globals not loaded from {{ inventory_dir }}/group_vars/all.yml"
-      
+    - name: Fail if globals missing
+      ansible.builtin.assert:
+        that:
+          - ospf_process is defined
+          - ospf_area is defined
+          - rp_address is defined
+        fail_msg: "Global vars not loaded properly"
+
   vars:
     ansible_network_os: cisco.ios.ios
     ansible_command_timeout: 300
 
   tasks:
+
     - name: Push base global config
       cisco.ios.ios_config:
         lines: "{{ base_global_config | default([]) }}"
@@ -66,7 +68,7 @@ pre_tasks:
         - multicast_enabled | default(false)
         - rp_address is defined
 
-    - name: Configure loopback interfaces basic settings
+    - name: Configure loopback interfaces
       cisco.ios.ios_config:
         parents:
           - "interface {{ item.name }}"
@@ -75,11 +77,16 @@ pre_tasks:
           - "no shutdown"
       loop: "{{ loopbacks | default([]) }}"
 
-    - name: Configure routed interfaces basic settings
+    - name: Configure routed interfaces
       cisco.ios.ios_config:
         parents:
           - "interface {{ item.name }}"
-        lines: "{{ (['description ' ~ item.description] if item.description is defined else []) + ['ip address ' ~ item.ip ~ ' ' ~ item.mask, 'no shutdown'] }}"
+        lines: >-
+          {{
+            (['description ' ~ item.description] if item.description is defined else [])
+            + ['ip address ' ~ item.ip ~ ' ' ~ item.mask]
+            + ['no shutdown']
+          }}
       loop: "{{ interfaces | default([]) }}"
 
     - name: Configure OSPF router process
@@ -108,7 +115,7 @@ pre_tasks:
       loop: "{{ interfaces | default([]) }}"
       when: item.ospf | default(false)
 
-    - name: Configure PIM on loopbacks where required
+    - name: Configure PIM on loopbacks
       cisco.ios.ios_config:
         parents:
           - "interface {{ item.name }}"
@@ -119,7 +126,7 @@ pre_tasks:
         - multicast_enabled | default(false)
         - item.pim | default(false)
 
-    - name: Configure PIM on physical interfaces where required
+    - name: Configure PIM on physical interfaces
       cisco.ios.ios_config:
         parents:
           - "interface {{ item.name }}"
@@ -130,7 +137,7 @@ pre_tasks:
         - multicast_enabled | default(false)
         - item.pim | default(false)
 
-    - name: Configure IGMP join groups on interfaces
+    - name: Configure IGMP join groups
       cisco.ios.ios_config:
         parents:
           - "interface {{ item.name }}"
