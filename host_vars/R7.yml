@@ -16,7 +16,7 @@ interfaces:
     mask: 255.255.255.0
     ospf: true
     pim: true
-    description: "Link to R5"
+    description: "Ansible Link to R5"
 
   - name: Ethernet1/0
     ip: 192.168.8.227
