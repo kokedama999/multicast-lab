@@ -15,5 +15,6 @@ base_global_config:
   - service password-encryption
   - no ip http server
   - no ip http secure-server
+  - no service config
 multicast_global_config:
   - ip multicast-routing
