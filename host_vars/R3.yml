@@ -16,30 +16,35 @@ interfaces:
     mask: 255.255.255.0
     ospf: true
     pim: true
+    description: "Link to R1"
 
   - name: Ethernet0/1
     ip: 36.36.36.3
     mask: 255.255.255.0
     ospf: true
     pim: true
+    description: "Link to R6"
 
   - name: Ethernet0/2
     ip: 23.23.23.3
     mask: 255.255.255.0
     ospf: true
     pim: true
+    description: "Link to R2"
 
   - name: Ethernet1/0
     ip: 192.168.8.223
     mask: 255.255.255.0
     ospf: false
     pim: false
+    description: "Management"
 
   - name: Ethernet1/3
     ip: 34.34.34.3
     mask: 255.255.255.0
     ospf: true
     pim: true
+    description: "Link to R4"
 
 shutdown_interfaces:
   - Ethernet0/3
