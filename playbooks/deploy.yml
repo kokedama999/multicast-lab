@@ -20,7 +20,7 @@
 
   vars:
     ansible_network_os: cisco.ios.ios
-    ansible_command_timeout: 300
+    ansible_command_timeout: 20
 
   tasks:
     - name: Push base global config
