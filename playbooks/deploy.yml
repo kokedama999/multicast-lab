@@ -145,5 +145,5 @@
         commands:
           - write memory
       vars:
-        ansible_command_timeout: 300
+        ansible_command_timeout: 20
       ignore_errors: true
