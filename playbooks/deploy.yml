@@ -140,8 +140,10 @@
           - "shutdown"
       loop: "{{ shutdown_interfaces | default([]) }}"
 
-    - name: Save config if modified
-      cisco.ios.ios_config:
-        save_when: modified
+    - name: Save config with write memory
+      cisco.ios.ios_command:
+        commands:
+          - write memory
       vars:
         ansible_command_timeout: 300
+      ignore_errors: true
