@@ -16,21 +16,21 @@ interfaces:
     mask: 255.255.255.0
     ospf: true
     pim: true
-    description: "Link to R4"
+    description: "Ansible Link to R4"
 
   - name: Ethernet0/1
     ip: 36.36.36.6
     mask: 255.255.255.0
     ospf: true
     pim: true
-    description: "Link to R3"
+    description: "Ansible Link to R3"
 
   - name: Ethernet0/2
     ip: 56.56.56.6
     mask: 255.255.255.0
     ospf: true
     pim: true
-    description: "Link to R5"
+    description: "Ansible Link to R5"
 
 
   - name: Ethernet1/0

@@ -16,7 +16,7 @@ interfaces:
     mask: 255.255.255.0
     ospf: true
     pim: true
-    description: "Link to R3"
+    description: "Ansible Link to R3"
 
   - name: Ethernet0/1
     dhcp: true
