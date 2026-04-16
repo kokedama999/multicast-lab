@@ -18,12 +18,6 @@ interfaces:
     pim: true
     description: "Ansible Link to R3"
 
-  - name: Ethernet0/1
-    dhcp: true
-    ospf: false
-    pim: false
-    description: "Management DHCP"
-
   - name: Ethernet1/0
     ip: 192.168.8.221
     mask: 255.255.255.0
@@ -32,6 +26,7 @@ interfaces:
     description: "Management"
 
 shutdown_interfaces:
+  - Ethernet0/1
   - Ethernet0/2
   - Ethernet0/3
   - Ethernet1/1
