@@ -1,4 +1,11 @@
-#16-04-26
+# ==========================================
+# Playbook: deploy.yml
+# Version: v1.0
+# Date: 2026-04-16
+# Author: 
+# Notes:
+# ==========================================
+
 ---
 - name: Deploy multicast lab
   hosts: cisco
@@ -12,20 +19,11 @@
     ansible_command_timeout: 120
 
   tasks:
-    - name: Apply base global config
+    - name: Set hostname
       cisco.ios.ios_config:
-        lines: "{{ base_global_config }}"
-      when:
-        - base_global_config is defined
-        - base_global_config | length > 0
-
-    - name: Enable multicast globally where required
-      cisco.ios.ios_config:
-        lines: "{{ multicast_global_config }}"
-      when:
-        - multicast_enabled | default(false)
-        - multicast_global_config is defined
-        - multicast_global_config | length > 0
+        lines:
+          - "hostname {{ hostname }}"
+      when: hostname is defined
 
     - name: Configure loopback addresses
       cisco.ios.ios_config:
@@ -70,17 +68,7 @@
       loop_control:
         label: "{{ item.name }}"
 
-    - name: Configure DHCP interfaces
-      cisco.ios.ios_config:
-        parents: "interface {{ item.name }}"
-        lines:
-          - "ip address dhcp"
-      loop: "{{ interfaces | default([]) }}"
-      when: item.dhcp | default(false)
-      loop_control:
-        label: "{{ item.name }}"
-
-    - name: Configure static interface addresses
+    - name: Configure interface IP addresses
       cisco.ios.ios_config:
         parents: "interface {{ item.name }}"
         lines:
@@ -90,6 +78,16 @@
         - not (item.dhcp | default(false))
         - item.ip is defined
         - item.mask is defined
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Configure DHCP interfaces
+      cisco.ios.ios_config:
+        parents: "interface {{ item.name }}"
+        lines:
+          - "ip address dhcp"
+      loop: "{{ interfaces | default([]) }}"
+      when: item.dhcp | default(false)
       loop_control:
         label: "{{ item.name }}"
 
@@ -152,7 +150,6 @@
       when:
         - ospf_process is defined
         - router_id is defined
-        - router_id | length > 0
 
     - name: Configure RP where multicast is enabled
       cisco.ios.ios_config:
@@ -162,8 +159,9 @@
         - multicast_enabled | default(false)
         - rp_enabled | default(false)
         - rp_address is defined
-        - rp_address | length > 0
 
     - name: Save config if modified
       cisco.ios.ios_config:
         save_when: modified
+      vars:
+        ansible_command_timeout: 120
