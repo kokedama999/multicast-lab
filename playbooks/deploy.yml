@@ -15,33 +15,14 @@
   collections:
     - cisco.ios
 
-  pre_tasks:
-    - name: Load global vars explicitly
-      ansible.builtin.include_vars:
-        file: "{{ inventory_dir }}/group_vars/all.yml"
-
-    - name: Debug global vars (sanity check)
-      ansible.builtin.debug:
-        msg:
-          host: "{{ inventory_hostname }}"
-          ospf_process: "{{ ospf_process | default('MISSING') }}"
-          ospf_area: "{{ ospf_area | default('MISSING') }}"
-          rp_address: "{{ rp_address | default('MISSING') }}"
-
-    - name: Fail if globals missing
-      ansible.builtin.assert:
-        that:
-          - ospf_process is defined
-          - ospf_area is defined
-          - rp_address is defined
-        fail_msg: "Global vars not loaded properly"
+  vars_files:
+    - ../group_vars/all.yml
 
   vars:
     ansible_network_os: cisco.ios.ios
     ansible_command_timeout: 300
 
   tasks:
-
     - name: Push base global config
       cisco.ios.ios_config:
         lines: "{{ base_global_config | default([]) }}"
@@ -81,12 +62,7 @@
       cisco.ios.ios_config:
         parents:
           - "interface {{ item.name }}"
-        lines: >-
-          {{
-            (['description ' ~ item.description] if item.description is defined else [])
-            + ['ip address ' ~ item.ip ~ ' ' ~ item.mask]
-            + ['no shutdown']
-          }}
+        lines: "{{ (['description ' ~ item.description] if item.description is defined else []) + ['ip address ' ~ item.ip ~ ' ' ~ item.mask, 'no shutdown'] }}"
       loop: "{{ interfaces | default([]) }}"
 
     - name: Configure OSPF router process
@@ -95,7 +71,9 @@
           - "router ospf {{ ospf_process }}"
         lines:
           - "router-id {{ router_id }}"
-      when: router_id is defined
+      when:
+        - ospf_process is defined
+        - router_id is defined
 
     - name: Configure OSPF on loopbacks
       cisco.ios.ios_config:
@@ -104,7 +82,10 @@
         lines:
           - "ip ospf {{ ospf_process }} area {{ ospf_area }}"
       loop: "{{ loopbacks | default([]) }}"
-      when: item.ospf | default(false)
+      when:
+        - ospf_process is defined
+        - ospf_area is defined
+        - item.ospf | default(false)
 
     - name: Configure OSPF on physical interfaces
       cisco.ios.ios_config:
@@ -113,7 +94,10 @@
         lines:
           - "ip ospf {{ ospf_process }} area {{ ospf_area }}"
       loop: "{{ interfaces | default([]) }}"
-      when: item.ospf | default(false)
+      when:
+        - ospf_process is defined
+        - ospf_area is defined
+        - item.ospf | default(false)
 
     - name: Configure PIM on loopbacks
       cisco.ios.ios_config:
