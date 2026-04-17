@@ -1,75 +1,149 @@
-- name: Deploy multicast lab
+# ==========================================
+# Playbook: deploy.yml
+# Version: v1.8
+# Date: 2026-04-17
+# Author: 
+# Notes:
+# ==========================================
+
+---
+- name: Deploy base, OSPF and multicast config to Cisco routers
   hosts: cisco
-  gather_facts: false
+  connection: ansible.netcommon.network_cli
+  gather_facts: yes
+
+  collections:
+    - cisco.ios
+
+  vars_files:
+    - ../group_vars/all.yml
 
   vars:
-    ospf_process: 1
-    ospf_area: 0
-    rp_address: 3.3.3.3
-
-    base_global_config:
-      - no ip domain lookup
-      - ip cef
-      - login on-success log
-      - no ipv6 cef
-      - spanning-tree mode rapid-pvst
-      - ip http server
-      - ip http secure-server
-      - ip ssh bulk-mode 131072
-      - no logging btrace
-
-    multicast_global_config:
-      - ip multicast-routing
+    ansible_network_os: cisco.ios.ios
+    ansible_command_timeout: 20
 
   tasks:
-    - name: Apply base global config
+    - name: Push base global config
       cisco.ios.ios_config:
-        lines: "{{ base_global_config }}"
+        lines: "{{ base_global_config | default([]) }}"
+      when: base_global_config | default([]) | length > 0
 
-    - name: Enable multicast globally where required
+    - name: Set hostname
       cisco.ios.ios_config:
-        lines: "{{ multicast_global_config }}"
-      when: multicast_enabled | default(false)
-
-    - name: Configure loopbacks
-      cisco.ios.ios_config:
-        parents: "interface {{ item.name }}"
-        lines: >-
-          {{
-            ['ip address ' ~ item.ip ~ ' ' ~ item.mask, 'no shutdown']
-            + (['ip ospf ' ~ ospf_process|string ~ ' area ' ~ ospf_area|string] if item.ospf | default(false) else [])
-            + (['ip pim sparse-mode'] if item.pim | default(false) else [])
-          }}
-      loop: "{{ loopbacks | default([]) }}"
-
-    - name: Configure data interfaces
-      cisco.ios.ios_config:
-        parents: "interface {{ item.name }}"
-        lines: >-
-          {{
-            (['ip address dhcp'] if item.dhcp | default(false) else ['ip address ' ~ item.ip ~ ' ' ~ item.mask])
-            + ['no shutdown']
-            + (['ip ospf ' ~ ospf_process|string ~ ' area ' ~ ospf_area|string] if item.ospf | default(false) else [])
-            + (['ip pim sparse-mode'] if item.pim | default(false) else [])
-            + (['ip igmp join-group ' ~ item.igmp_join_group] if item.igmp_join_group is defined else [])
-          }}
-      loop: "{{ interfaces | default([]) }}"
-
-    - name: Configure OSPF router-id
-      cisco.ios.ios_config:
-        parents: "router ospf {{ ospf_process }}"
         lines:
-          - "router-id {{ router_id }}"
-      when: router_id is defined
+          - "hostname {{ hostname }}"
+      when: hostname is defined
 
-    - name: Configure RP where multicast is enabled
+    - name: Enable multicast globally
+      cisco.ios.ios_config:
+        lines: "{{ multicast_global_config | default([]) }}"
+      when:
+        - multicast_enabled | default(false)
+        - multicast_global_config | default([]) | length > 0
+
+    - name: Configure RP address globally
       cisco.ios.ios_config:
         lines:
           - "ip pim rp-address {{ rp_address }}"
       when:
         - multicast_enabled | default(false)
-        - rp_enabled | default(false)
+        - rp_address is defined
 
-    - name: Save config
+    - name: Configure loopback interfaces
       cisco.ios.ios_config:
-        save_when: changed
+        parents:
+          - "interface {{ item.name }}"
+        lines:
+          - "ip address {{ item.ip }} {{ item.mask }}"
+          - "no shutdown"
+      loop: "{{ loopbacks | default([]) }}"
+
+    - name: Configure routed interfaces
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ item.name }}"
+        lines: "{{ (['description ' ~ item.description] if item.description is defined else []) + ['ip address ' ~ item.ip ~ ' ' ~ item.mask, 'no shutdown'] }}"
+      loop: "{{ interfaces | default([]) }}"
+
+    - name: Configure OSPF router process
+      cisco.ios.ios_config:
+        parents:
+          - "router ospf {{ ospf_process }}"
+        lines:
+          - "router-id {{ router_id }}"
+      when:
+        - ospf_process is defined
+        - router_id is defined
+
+    - name: Configure OSPF on loopbacks
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ item.name }}"
+        lines:
+          - "ip ospf {{ ospf_process }} area {{ ospf_area }}"
+      loop: "{{ loopbacks | default([]) }}"
+      when:
+        - ospf_process is defined
+        - ospf_area is defined
+        - item.ospf | default(false)
+
+    - name: Configure OSPF on physical interfaces
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ item.name }}"
+        lines:
+          - "ip ospf {{ ospf_process }} area {{ ospf_area }}"
+      loop: "{{ interfaces | default([]) }}"
+      when:
+        - ospf_process is defined
+        - ospf_area is defined
+        - item.ospf | default(false)
+
+    - name: Configure PIM on loopbacks
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ item.name }}"
+        lines:
+          - "ip pim sparse-mode"
+      loop: "{{ loopbacks | default([]) }}"
+      when:
+        - multicast_enabled | default(false)
+        - item.pim | default(false)
+
+    - name: Configure PIM on physical interfaces
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ item.name }}"
+        lines:
+          - "ip pim sparse-mode"
+      loop: "{{ interfaces | default([]) }}"
+      when:
+        - multicast_enabled | default(false)
+        - item.pim | default(false)
+
+    - name: Configure IGMP join groups
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ item.name }}"
+        lines:
+          - "ip igmp join-group {{ item.igmp_join_group }}"
+      loop: "{{ interfaces | default([]) }}"
+      when:
+        - multicast_enabled | default(false)
+        - item.igmp_join_group is defined
+
+    - name: Shutdown unused interfaces
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ item }}"
+        lines:
+          - "shutdown"
+      loop: "{{ shutdown_interfaces | default([]) }}"
+
+    - name: Save config with write memory
+      cisco.ios.ios_command:
+        commands:
+          - write memory
+      vars:
+        ansible_command_timeout: 20
+      ignore_errors: true
