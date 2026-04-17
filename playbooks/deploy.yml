@@ -1,7 +1,7 @@
 # ==========================================
 # Playbook: deploy.yml
 # Version: v1.7
-# Date: 2026-04-16
+# Date: 2026-04-17
 # Author: 
 # Notes:
 # ==========================================
@@ -10,7 +10,7 @@
 - name: Deploy base, OSPF and multicast config to Cisco routers
   hosts: cisco
   connection: ansible.netcommon.network_cli
-  gather_facts: no
+  gather_facts: yes
 
   collections:
     - cisco.ios
