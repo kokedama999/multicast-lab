@@ -1,0 +1,61 @@
+##V4
+- name: Back up running configs from routers
+  hosts: cisco
+  gather_facts: false
+
+  vars:
+    ansible_become: false
+    backup_timestamp: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+    backup_dir: "{{ playbook_dir }}/../backups"
+
+  tasks:
+    - name: Ensure backup directory exists on Ansible server
+      ansible.builtin.file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+
+    - name: Get running config
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: running_config
+
+    - name: Save running config to timestamped file on Ansible server
+      ansible.builtin.copy:
+        content: "{{ running_config.stdout[0] }}"
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}-running-{{ backup_timestamp }}.cfg"
+        mode: "0644"
+      delegate_to: localhost
+
+- name: Commit and push backups to GitHub
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    repo_dir: "{{ playbook_dir }}/.."
+    backup_timestamp: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+
+  tasks:
+    - name: Stage backup files
+      ansible.builtin.command: git add backups/
+      args:
+        chdir: "{{ repo_dir }}"
+
+    - name: Commit backup files
+      ansible.builtin.command: >
+        git commit -m "Backup router configs {{ backup_timestamp }}"
+      args:
+        chdir: "{{ repo_dir }}"
+      register: git_commit
+      failed_when: false
+      changed_when: >
+        'nothing to commit' not in
+        ((git_commit.stdout | default('')) ~ (git_commit.stderr | default('')))
+
+    - name: Push backup files to GitHub
+      ansible.builtin.command: git push origin main
+      args:
+        chdir: "{{ repo_dir }}"
+      when: git_commit.rc == 0

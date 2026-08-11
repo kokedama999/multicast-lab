@@ -1,45 +1,48 @@
-hostname: R6
-router_id: 6.6.6.6
+hostname: R2
+router_id: 2.2.2.2
 multicast_enabled: true
 rp_enabled: true
 
 loopbacks:
   - name: Loopback0
-    ip: 6.6.6.6
+    ip: 2.2.2.2
     mask: 255.255.255.255
-    ospf: true
+    ospf: false
     pim: false
 
 interfaces:
-  - name: Ethernet0/0
-    ip: 46.46.46.6
-    mask: 255.255.255.0
-    ospf: true
-    pim: true
-
-  - name: Ethernet0/1
-    ip: 36.36.36.6
-    mask: 255.255.255.0
-    ospf: true
-    pim: true
-
   - name: Ethernet0/2
-    ip: 56.56.56.6
+    ip: 23.23.23.2
     mask: 255.255.255.0
     ospf: true
     pim: true
+    description: "Ansible Link to R3"
 
+  - name: Ethernet0/3
+    ip: 25.25.25.2
+    mask: 255.255.255.0
+    ospf: true
+    pim: true
+    description: "Ansible Link to R5"
 
   - name: Ethernet1/0
-    ip: 192.168.8.226
+    ip: 192.168.8.222
     mask: 255.255.255.0
     ospf: false
     pim: false
-    
+    description: "Management"
+
+  - name: Ethernet1/2
+    ip: 24.24.24.2
+    mask: 255.255.255.0
+    ospf: true
+    pim: true
+    description: "Ansible Link to R4"
+
 shutdown_interfaces:
-  - Ethernet0/3
+  - Ethernet0/0
+  - Ethernet0/1
   - Ethernet1/1
-  - Ethernet1/2
   - Ethernet1/3
   - Serial2/0
   - Serial2/1

@@ -16,30 +16,35 @@ interfaces:
     mask: 255.255.255.0
     ospf: true
 #   pim: true
+    description: "Ansible Link to R7"
 
   - name: Ethernet0/1
     ip: 45.45.45.5
     mask: 255.255.255.0
     ospf: true
     pim: true
+    description: "Ansible Link to R4"
 
   - name: Ethernet0/2
     ip: 56.56.56.5
     mask: 255.255.255.0
     ospf: true
     pim: true
+    description: "Ansible Link to R6"
 
   - name: Ethernet0/3
     ip: 25.25.25.5
     mask: 255.255.255.0
     ospf: true
     pim: true
+    description: "Ansible Link to R2"
 
   - name: Ethernet1/0
     ip: 192.168.8.225
     mask: 255.255.255.0
     ospf: false
     pim: false
+    description: "Management"
     
 shutdown_interfaces:
   - Ethernet1/1
